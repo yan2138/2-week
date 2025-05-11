@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Image filter tool</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }en
+        h1 {
+            color: #5bc0de;
+            text-align: center;
+        }Image filter tool
+        .filter-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .filter-option {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .filter-option:hover {
+            background: #f0f0f0;
+        }
+        img {
+            max-width: 100%;
+            max-height: 300px;
+            border: 1px solid #ddd;
+            margin-top: 10px;
+        }
+        #download-btn {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 15px;
+            background: #5cb85c;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Image filter tool</h1>
+    
+    <div>
+        <input type="file" id="image-upload" accept="image/*">
+    </div>
+    
+    <div class="filter-options">
+        <div class="filter-option" data-filter="grayscale">Black and white filter</div>
+        <div class="filter-option" data-filter="sepia">Vintage filter</div>
+        <div class="filter-option" data-filter="invert">Inverse color filter</div>
+        <div class="filter-option" data-filter="redboost">Enhance the red color</div>
+    </div>
+    
+    <div style="display: flex; justify-content: space-around; margin-top: 30px;">
+        <div style="text-align: center;">
+            <h3>Original picture</h3>
+            < img id="original-img">
+        </div>
+        <div style="text-align: center;">
+            <h3>Filter effect</h3>
+            < img id="result-img">
+            <a id="download-btn" download="filtered.png">Download pictures</a >
+        </div>
+    </div>
+
+    <script>
+
+        document.getElementById('image-upload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                document.getElementById('original-img').src = event.target.result;
+                document.getElementById('result-img').src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+    
+        document.querySelectorAll('.filter-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const filterType = this.getAttribute('data-filter');
+                const originalImg = document.getElementById('original-img');
+                
+                if (!originalImg.src || originalImg.src === '#') {
+                    alert('Please upload the picture first.');
+                    return;
+                }
+                
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = function() {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+                    
+                    
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i], g = data[i+1], b = data[i+2];
+                        
+                        switch(filterType) {
+                            case 'grayscale':
+                                const avg = (r + g + b) / 3;
+                                data[i] = data[i+1] = data[i+2] = avg;
+                                break;
+                            case 'sepia':
+                                data[i] = Math.min(255, r*0.393 + g*0.769 + b*0.189);
+                                data[i+1] = Math.min(255, r*0.349 + g*0.686 + b*0.168);
+                                data[i+2] = Math.min(255, r*0.272 + g*0.534 + b*0.131);
+                                break;
+                            case 'invert':
+                                data[i] = 255 - r;
+                                data[i+1] = 255 - g;
+                                data[i+2] = 255 - b;
+                                break;
+                            case 'redboost':
+                                data[i] = Math.min(255, r*1.5);
+                                data[i+1] = g*0.7;
+                                data[i+2] = b*0.7;
+                                break;
+                        }
+                    }
+                    
+                    ctx.putImageData(imageData, 0, 0);
+                    document.getElementById('result-img').src = canvas.toDataURL();
+                    document.getElementById('download-btn').href = canvas.toDataURL();
+                };
+                
+                img.src = originalImg.src;
+            });
+        });
+    </script>
+</body>
+</html>
